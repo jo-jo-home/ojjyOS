@@ -1,0 +1,2639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ojjyOS</title>
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color: white;
+  overflow: hidden;
+}
+#desktop {
+  position: relative;
+  height: calc(100% - 48px);
+  background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+  background-size: cover;
+  filter: brightness(0.7);
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+#taskbar {
+  height: 48px;
+  width: 100%;
+  background: rgba(10, 25, 60, 0.9);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  gap: 20px;
+  user-select: none;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+body.os-ready #desktop,
+body.os-ready #taskbar {
+  opacity: 1;
+}
+.hidden {
+  display: none !important;
+}
+#lock-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, rgba(0,180,255,0.35), transparent 60%), rgba(0,0,0,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+}
+.lock-box {
+  background: rgba(10,25,60,0.97);
+  padding: 24px 28px;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.9);
+  width: 90%;
+  max-width: 320px;
+  text-align: center;
+}
+.lock-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.lock-sub {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-bottom: 12px;
+}
+#lock-password {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+}
+.lock-error {
+  min-height: 16px;
+  font-size: 12px;
+  color: #ff7777;
+  margin-bottom: 10px;
+}
+#lock-submit {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: none;
+  background: #4a90e2;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+#welcome-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, rgba(74,144,226,0.6), transparent 60%), rgba(5,10,25,0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+.welcome-box {
+  text-align: center;
+  padding: 24px 32px;
+  border-radius: 16px;
+  background: rgba(10,25,60,0.9);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.8);
+  max-width: 320px;
+}
+.welcome-greeting {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.welcome-sub {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-bottom: 16px;
+}
+.welcome-spinner {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.25);
+  border-top-color: #4a90e2;
+  animation: spin 0.9s linear infinite;
+}
+.welcome-caption {
+  margin-top: 10px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+#name-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2500;
+}
+#name-modal.hidden {
+  display: none !important;
+}
+.name-modal-content {
+  background: rgba(10,25,60,0.97);
+  border-radius: 16px;
+  padding: 20px 24px;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.85);
+}
+.name-modal-content h2 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+.name-modal-content p {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-bottom: 12px;
+}
+#name-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  margin-bottom: 14px;
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+}
+.name-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.name-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.name-btn-skip {
+  background: transparent;
+  color: #ccc;
+}
+.name-btn-save {
+  background: #4a90e2;
+  color: #fff;
+  font-weight: 600;
+}
+#desktop {
+  position: relative;
+}
+#left-start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#start-button {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+  position: relative;
+}
+#start-button:active {
+  transform: scale(0.95);
+}
+#branding {
+  font-weight: 700;
+  font-size: 18px;
+  font-family: 'Segoe UI Black', 'Arial Black', sans-serif;
+  letter-spacing: 1px;
+  color: #4a90e2;
+  user-select: none;
+}
+#app-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-grow: 1;
+  justify-content: center;
+}
+.app-icon {
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  filter: drop-shadow(0 0 2px #0008);
+  transition: transform 0.2s ease;
+  position: relative;
+}
+.app-icon:hover {
+  transform: scale(1.3);
+}
+.app-icon > img {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+#time-battery {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 6px 14px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+}
+#time {
+  user-select: none;
+  min-width: 70px;
+  text-align: right;
+}
+#date {
+  font-size: 13px;
+  opacity: 0.9;
+  user-select: none;
+}
+#battery {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  user-select: none;
+}
+#battery svg {
+  width: 24px;
+  height: 12px;
+  stroke: white;
+  fill: none;
+}
+#battery-level {
+  fill: #4caf50;
+}
+#battery-charging-icon {
+  font-size: 13px;
+  display: none;
+}
+#app-launcher {
+  position: fixed;
+  bottom: 60px;
+  left: 20px;
+  z-index: 1100;
+}
+#app-launcher-inner {
+  width: 260px;
+  background: rgba(10,25,60,0.97);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.8);
+  padding: 10px;
+}
+#app-search {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+#app-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+.app-launcher-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.app-launcher-item:hover {
+  background: rgba(255,255,255,0.12);
+}
+.window {
+  position: absolute;
+  width: 420px;
+  height: 330px;
+  min-width: 260px;
+  min-height: 200px;
+  background: rgba(20, 40, 70, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  user-select: text;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease, transform 0.2s ease, width 0.2s ease, height 0.2s ease;
+}
+.window.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.window.fullscreen {
+  width: 100vw !important;
+  height: calc(100vh - 48px) !important;
+  top: 0 !important;
+  left: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  z-index: 9999 !important;
+}
+.window.animate-fullscreen {
+  animation: fullscreenZoom 0.25s ease-out;
+}
+@keyframes fullscreenZoom {
+  from { transform: scale(0.96); opacity: 0; }
+  to   { transform: scale(1);     opacity: 1; }
+}
+.window.minimizing {
+  transform-origin: center bottom;
+  animation: macMinimize 0.45s ease-in forwards;
+}
+@keyframes macMinimize {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.25, 0.15) translateY(260px);
+    opacity: 0;
+  }
+}
+.window-header {
+  flex: 0 0 36px;
+  background: rgba(10, 25, 60, 0.8);
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  cursor: move;
+}
+.window-title {
+  font-weight: 700;
+  font-size: 16px;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.window-controls {
+  display: flex;
+  gap: 10px;
+}
+.window-controls button {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+}
+.close-btn {
+  background: #ff5f57;
+}
+.close-btn::before {
+  content: "✕";
+  position: absolute;
+  inset: 0;
+  color: #ffffff;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+.minimize-btn {
+  background: #ffbd2e;
+}
+.minimize-btn::before {
+  content: "-";
+  position: absolute;
+  inset: 0;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 16px;
+  text-align: center;
+}
+.fullscreen-btn {
+  background: #27c93f;
+  position: relative;
+}
+.fullscreen-btn::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid white;
+  border-radius: 1px;
+  box-sizing: border-box;
+}
+.window-content {
+  flex-grow: 1;
+  background: rgba(10, 20, 40, 0.9);
+  border-radius: 0 0 12px 12px;
+  padding: 12px;
+  color: white;
+  font-size: 14px;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.window.active-window .window-header {
+  background: rgba(30, 80, 160, 0.9);
+}
+.window.active-window {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.9);
+}
+.window-resizer {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  right: 3px;
+  bottom: 3px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 0, transparent 45%, rgba(255,255,255,0.35) 45%, rgba(255,255,255,0.8));
+  border-radius: 3px;
+  opacity: 0.6;
+}
+.window:hover .window-resizer {
+  opacity: 1;
+}
+.window.fullscreen .window-resizer {
+  display: none;
+}
+.notes-layout {
+  display: flex;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+.notes-sidebar {
+  width: 160px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.notes-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.notes-sidebar-header button {
+  background: #4a90e2;
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 18px;
+  padding: 0;
+}
+#notes-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 4px 6px;
+}
+.notes-list-item {
+  padding: 4px 6px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  background: rgba(255,255,255,0.04);
+}
+.notes-list-item.active {
+  background: rgba(74,144,226,0.7);
+}
+.notes-list-item-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.notes-list-item-sub {
+  font-size: 11px;
+  opacity: 0.7;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.notes-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.note-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+.note-title-display {
+  font-weight: 600;
+  cursor: pointer;
+}
+.note-title-input {
+  display: none;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  border: none;
+  color: #fff;
+  padding: 2px 6px;
+  font-size: 12px;
+  outline: none;
+  min-width: 80px;
+}
+textarea {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  resize: none;
+  outline: none;
+  color: white;
+  font-size: 14px;
+  font-family: inherit;
+  padding: 8px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 5px rgba(255 255 255 / 0.1);
+  transition: box-shadow 0.3s ease;
+}
+textarea:focus {
+  box-shadow: inset 0 0 10px #4a90e2;
+}
+.note-footer {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  user-select: none;
+  gap: 8px;
+}
+.note-footer-left {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.note-footer-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.note-footer button {
+  background: #4a90e2;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+.note-footer button:hover {
+  background: #357abd;
+}
+.char-count {
+  opacity: 0.7;
+}
+.save-status {
+  opacity: 0.7;
+}
+.camera-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+.camera-main-row {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+.camera-preview-main {
+  flex: 2;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+.camera-preview-main video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.camera-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.35) 1px, transparent 1px);
+  background-size: 33.33% 100%, 100% 33.33%;
+  display: none;
+}
+.camera-side-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.camera-thumbnail {
+  flex: 1;
+  border-radius: 8px;
+  background: #000;
+  max-width: 100%;
+  object-fit: cover;
+  display: none;
+}
+.camera-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.camera-controls button {
+  background: #4a90e2;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+}
+.camera-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.camera-controls button:hover:not(:disabled) {
+  background: #357abd;
+}
+.camera-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+.camera-toggle input {
+  cursor: pointer;
+}
+.camera-download-link {
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  display: none;
+}
+.camera-status {
+  font-size: 12px;
+  opacity: 0.8;
+  min-height: 14px;
+}
+.gallery-container {
+  display: flex;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+.gallery-list {
+  width: 160px;
+  overflow-y: auto;
+  background: rgba(10, 20, 40, 0.9);
+  border-radius: 8px;
+  padding: 6px;
+}
+.gallery-item {
+  padding: 6px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  cursor: pointer;
+  font-size: 12px;
+}
+.gallery-item:hover {
+  background: rgba(255,255,255,0.12);
+}
+.gallery-item-type {
+  font-weight: 600;
+  font-size: 11px;
+  opacity: 0.8;
+}
+.gallery-item-name {
+  font-size: 12px;
+}
+.gallery-item-time {
+  font-size: 11px;
+  opacity: 0.6;
+}
+.gallery-viewer {
+  flex: 1;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 8px;
+}
+.gallery-viewer img,
+.gallery-viewer video {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+}
+.gallery-placeholder {
+  font-size: 13px;
+  opacity: 0.8;
+  text-align: center;
+}
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
+}
+.settings-section {
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 13px;
+}
+.settings-section h3 {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.wallpaper-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.wallpaper-thumb {
+  width: 64px;
+  height: 40px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  border: 2px solid transparent;
+  position: relative;
+}
+.wallpaper-thumb span {
+  position: absolute;
+  left: 4px;
+  bottom: 3px;
+  font-size: 9px;
+  background: rgba(0,0,0,0.6);
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+.wallpaper-thumb.active {
+  border-color: #4a90e2;
+}
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.settings-upload {
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.9;
+}
+.settings-upload input {
+  font-size: 11px;
+}
+.settings-timeformat {
+  margin-top: 6px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.settings-timeformat label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.settings-footer {
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.85;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.window.fullscreen .window-content.settings-content {
+  padding: 18px;
+}
+.window.fullscreen .window-content.settings-content .settings-container {
+  font-size: 15px;
+}
+.window.fullscreen .window-content.settings-content .settings-section h3 {
+  font-size: 16px;
+}
+.terminal-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 55%);
+  border-radius: 8px;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 12px;
+}
+.terminal-top-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.terminal-mode-btn {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 999px;
+  padding: 2px 8px;
+  cursor: pointer;
+  color: #eee;
+  font-size: 11px;
+}
+.terminal-mode-btn.active {
+  background: #4a90e2;
+  border-color: #4a90e2;
+}
+.terminal-mode-label {
+  margin-left: auto;
+  opacity: 0.8;
+  font-size: 11px;
+}
+.terminal-output {
+  flex: 1;
+  background: rgba(0,0,0,0.65);
+  border-radius: 6px;
+  padding: 6px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.terminal-line {
+  margin-bottom: 2px;
+}
+.terminal-line-cmd {
+  color: #9cdcfe;
+}
+.terminal-line-output {
+  color: #d4d4d4;
+}
+.terminal-line-error {
+  color: #f44747;
+}
+.terminal-input-row {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+  gap: 4px;
+  font-size: 12px;
+}
+#terminal-prompt {
+  color: #4ec9b0;
+  white-space: nowrap;
+}
+#terminal-input {
+  flex: 1;
+  background: rgba(0,0,0,0.7);
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 3px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+.filemanager-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+}
+.filemanager-toolbar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+}
+.filemanager-upload-label {
+  background: #4a90e2;
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.filemanager-upload-label input {
+  display: none;
+}
+.filemanager-body {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+.filemanager-list {
+  width: 180px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 8px;
+  padding: 6px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+.filemanager-item {
+  padding: 6px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.04);
+}
+.filemanager-item:hover {
+  background: rgba(255,255,255,0.12);
+}
+.filemanager-item-name {
+  font-weight: 600;
+}
+.filemanager-item-meta {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.filemanager-details {
+  flex: 1;
+  background: rgba(0,0,0,0.4);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 12px;
+  overflow: auto;
+}
+.filemanager-placeholder {
+  opacity: 0.8;
+}
+.filemanager-details h4 {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+.filemanager-details-row {
+  margin-bottom: 4px;
+}
+.filemanager-details-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+.filemanager-details-actions button,
+.filemanager-details-actions a {
+  background: #4a90e2;
+  border-radius: 6px;
+  padding: 4px 8px;
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.filemanager-details-actions button:hover,
+.filemanager-details-actions a:hover {
+  background: #357abd;
+}
+</style>
+</head>
+<body>
+<div id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-title">ojjyOS</div>
+    <div class="lock-sub">Enter password to continue</div>
+    <input id="lock-password" type="password" autocomplete="off" />
+    <div class="lock-error" id="lock-error"></div>
+    <button id="lock-submit">Unlock</button>
+  </div>
+</div>
+
+<div id="welcome-overlay">
+  <div class="welcome-box">
+    <div class="welcome-greeting" id="welcome-greeting">Welcome</div>
+    <div class="welcome-sub">Loading ojjyOS...</div>
+    <div class="welcome-spinner"></div>
+    <div class="welcome-caption" id="welcome-caption"></div>
+  </div>
+</div>
+
+<div id="name-modal" class="hidden">
+  <div class="name-modal-content">
+    <h2>Welcome to ojjyOS</h2>
+    <p>What should we call you?</p>
+    <input id="name-input" type="text" maxlength="24" placeholder="Enter your name" />
+    <div class="name-modal-actions">
+      <button class="name-btn name-btn-skip" id="name-skip-btn">Skip</button>
+      <button class="name-btn name-btn-save" id="name-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="desktop" aria-label="ojjyOS desktop"></div>
+
+<div id="taskbar" role="contentinfo" aria-label="ojjyOS taskbar">
+  <div id="left-start">
+    <button id="start-button" aria-label="Open app launcher"></button>
+    <div id="branding" aria-label="Operating system name">ojjyOS</div>
+  </div>
+  <div id="app-bar" role="navigation" aria-label="Application launcher">
+    <div class="app-icon" title="Notes" id="notes-app-btn" role="button" tabindex="0" aria-pressed="false">
+      <img src="https://img.icons8.com/ios-filled/50/ffffff/note.png" alt="Notes App Icon" />
+    </div>
+    <div class="app-icon" title="Camera" id="camera-app-btn" role="button" tabindex="0" aria-pressed="false">
+      <img src="https://img.icons8.com/ios-filled/50/ffffff/compact-camera.png" alt="Camera App Icon" />
+    </div>
+    <div class="app-icon" title="Gallery" id="gallery-app-btn" role="button" tabindex="0" aria-pressed="false">
+      <img src="https://img.icons8.com/ios-filled/50/ffffff/picture.png" alt="Gallery App Icon" />
+    </div>
+    <div class="app-icon" title="File Manager" id="filemanager-app-btn" role="button" tabindex="0" aria-pressed="false">
+      <img src="https://img.icons8.com/ios-filled/50/ffffff/folder-invoices.png" alt="File Manager App Icon" />
+    </div>
+    <div class="app-icon" title="Settings" id="settings-app-btn" role="button" tabindex="0" aria-pressed="false">
+      <img src="https://img.icons8.com/ios-glyphs/50/ffffff/settings.png" alt="Settings App Icon" />
+    </div>
+    <div class="app-icon" title="Terminal" id="terminal-app-btn" role="button" tabindex="0" aria-pressed="false">
+      <img src="https://img.icons8.com/ios-filled/50/ffffff/console.png" alt="Terminal App Icon" />
+    </div>
+  </div>
+  <div id="time-battery">
+    <div id="battery" aria-label="Battery level">
+      <svg viewBox="0 0 24 12" aria-hidden="true">
+        <rect x="1" y="2" width="20" height="8" rx="2" ry="2" stroke="white" stroke-width="1.5" fill="none"></rect>
+        <rect x="21" y="4" width="2" height="4" rx="1" ry="1" stroke="white" stroke-width="1.5" fill="none"></rect>
+        <rect id="battery-level" x="2" y="3" width="16" height="6" rx="1" ry="1"></rect>
+      </svg>
+      <span id="battery-percent">100%</span>
+      <span id="battery-charging-icon">⚡</span>
+    </div>
+    <div id="date"></div>
+    <div id="time" aria-live="polite" aria-atomic="true">00:00</div>
+  </div>
+</div>
+
+<div id="app-launcher" class="hidden">
+  <div id="app-launcher-inner">
+    <input id="app-search" type="text" placeholder="Search apps" />
+    <div id="app-list">
+      <button class="app-launcher-item" data-app="notes">Notes</button>
+      <button class="app-launcher-item" data-app="camera">Camera</button>
+      <button class="app-launcher-item" data-app="gallery">Gallery</button>
+      <button class="app-launcher-item" data-app="files">File Manager</button>
+      <button class="app-launcher-item" data-app="settings">Settings</button>
+      <button class="app-launcher-item" data-app="terminal">Terminal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER_NAME_KEY = 'ojjyOS_userName';
+const HAS_VISITED_KEY = 'ojjyOS_hasVisited';
+const NOTES_STORAGE_KEY = 'ojjyOS_notes_v2';
+const SETTINGS_STORAGE_KEY = 'ojjyOS_settings';
+const GALLERY_STORAGE_KEY = 'ojjyOS_gallery_items';
+const FILES_STORAGE_KEY = 'ojjyOS_files';
+const CORRECT_PASSWORD = 'jonashates67';
+let topZIndex = 10;
+let noteWindow = null;
+let cameraWindow = null;
+let galleryWindow = null;
+let settingsWindow = null;
+let terminalWindow = null;
+let fileManagerWindow = null;
+let notesData = [];
+let activeNoteId = null;
+let cameraStream = null;
+let lastBatteryState = { level: 1, charging: false };
+let settingsData = {
+  wallpaper: 'preset1',
+  timeFormat: '12h',
+  customWallpaper: null,
+  showGrid: false
+};
+
+function bringToFront(win) {
+  topZIndex += 1;
+  win.style.zIndex = topZIndex;
+  document.querySelectorAll('.window').forEach(w => w.classList.remove('active-window'));
+  win.classList.add('active-window');
+}
+
+function makeDraggable(win, handle) {
+  let isDragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
+  handle.addEventListener('mousedown', e => {
+    if (win.classList.contains('fullscreen')) return;
+    isDragging = true;
+    bringToFront(win);
+    const rect = win.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+  function onMove(e) {
+    if (!isDragging) return;
+    const x = e.clientX - offsetX;
+    const y = e.clientY - offsetY;
+    win.style.left = x + 'px';
+    win.style.top = y + 'px';
+  }
+  function onUp() {
+    isDragging = false;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+}
+
+function makeResizable(win, handle) {
+  let resizing = false;
+  let startX = 0;
+  let startY = 0;
+  let startW = 0;
+  let startH = 0;
+  handle.addEventListener('mousedown', e => {
+    if (win.classList.contains('fullscreen')) return;
+    e.stopPropagation();
+    resizing = true;
+    const rect = win.getBoundingClientRect();
+    startX = e.clientX;
+    startY = e.clientY;
+    startW = rect.width;
+    startH = rect.height;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+  function onMove(e) {
+    if (!resizing) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const newW = Math.max(260, startW + dx);
+    const newH = Math.max(200, startH + dy);
+    win.style.width = newW + 'px';
+    win.style.height = newH + 'px';
+  }
+  function onUp() {
+    resizing = false;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+}
+
+function getGreetingBase() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 18) return 'Good Afternoon';
+  return 'Good Evening';
+}
+
+function initWelcomeScreen() {
+  const overlay = document.getElementById('welcome-overlay');
+  const greetingEl = document.getElementById('welcome-greeting');
+  const captionEl = document.getElementById('welcome-caption');
+  const storedName = localStorage.getItem(USER_NAME_KEY);
+  const greetingBase = getGreetingBase();
+  if (greetingEl) {
+    greetingEl.textContent = storedName ? greetingBase + ', ' + storedName : greetingBase;
+  }
+  if (captionEl) {
+    captionEl.textContent = 'Downloading Assets...';
+    setTimeout(() => {
+      captionEl.textContent = 'Booting ojjyOS';
+    }, 2000);
+  }
+  setTimeout(() => {
+    document.body.classList.add('os-ready');
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      const hasVisited = localStorage.getItem(HAS_VISITED_KEY);
+      if (!hasVisited) {
+        showNameModal();
+      }
+      localStorage.setItem(HAS_VISITED_KEY, '1');
+    }, 200);
+  }, 3000);
+}
+
+function showNameModal() {
+  const modal = document.getElementById('name-modal');
+  const input = document.getElementById('name-input');
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    input.focus();
+  }, 50);
+}
+
+function hideNameModal() {
+  document.getElementById('name-modal').classList.add('hidden');
+}
+
+(function wireNameModal() {
+  const saveBtn = document.getElementById('name-save-btn');
+  const skipBtn = document.getElementById('name-skip-btn');
+  const input = document.getElementById('name-input');
+  saveBtn.addEventListener('click', () => {
+    const name = input.value.trim();
+    if (name) {
+      localStorage.setItem(USER_NAME_KEY, name);
+    }
+    hideNameModal();
+  });
+  skipBtn.addEventListener('click', () => {
+    hideNameModal();
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveBtn.click();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      hideNameModal();
+    }
+  });
+})();
+
+function wireLockScreen() {
+  const lock = document.getElementById('lock-screen');
+  const input = document.getElementById('lock-password');
+  const errorEl = document.getElementById('lock-error');
+  const btn = document.getElementById('lock-submit');
+  function attempt() {
+    if (input.value === CORRECT_PASSWORD) {
+      errorEl.textContent = '';
+      lock.classList.add('hidden');
+      initWelcomeScreen();
+    } else {
+      errorEl.textContent = 'Incorrect password';
+      input.value = '';
+      input.focus();
+    }
+  }
+  btn.addEventListener('click', attempt);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      attempt();
+    }
+  });
+  input.focus();
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      settingsData = Object.assign(settingsData, parsed);
+    }
+  } catch {}
+}
+
+function saveSettings() {
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsData));
+}
+
+function applyWallpaper() {
+  const desktop = document.getElementById('desktop');
+  if (settingsData.wallpaper === 'preset1') {
+    desktop.style.backgroundImage = "url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80')";
+  } else if (settingsData.wallpaper === 'preset2') {
+    desktop.style.backgroundImage = "linear-gradient(135deg, #00d2ff, #3a7bd5)";
+  } else if (settingsData.wallpaper === 'preset3') {
+    desktop.style.backgroundImage = "url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1920&q=80')";
+  } else if (settingsData.wallpaper === 'custom' && settingsData.customWallpaper) {
+    desktop.style.backgroundImage = "url('" + settingsData.customWallpaper + "')";
+  }
+}
+
+function updateTime() {
+  const timeEl = document.getElementById('time');
+  const dateEl = document.getElementById('date');
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  let timeStr = '';
+  if (settingsData.timeFormat === '24h') {
+    timeStr = hours.toString().padStart(2, '0') + ':' + minutes;
+  } else {
+    const suffix = hours >= 12 ? 'PM' : 'AM';
+    let h12 = hours % 12;
+    if (h12 === 0) h12 = 12;
+    timeStr = h12 + ':' + minutes + ' ' + suffix;
+  }
+  timeEl.textContent = timeStr;
+  const weekday = now.toLocaleDateString(undefined, { weekday: 'short' });
+  const month = now.toLocaleDateString(undefined, { month: 'short' });
+  const day = now.getDate();
+  dateEl.textContent = weekday + ' ' + month + ' ' + day;
+}
+
+setInterval(updateTime, 1000);
+
+function updateBatteryDisplay(level, charging) {
+  const levelRect = document.getElementById('battery-level');
+  const percentText = document.getElementById('battery-percent');
+  const chargingIcon = document.getElementById('battery-charging-icon');
+  const pct = Math.round(level * 100);
+  percentText.textContent = pct + '%';
+  levelRect.setAttribute('width', (16 * level).toString());
+  if (pct > 60) {
+    levelRect.setAttribute('fill', '#4caf50');
+  } else if (pct > 20) {
+    levelRect.setAttribute('fill', '#ffbd2e');
+  } else {
+    levelRect.setAttribute('fill', '#ff5f57');
+  }
+  if (charging) {
+    chargingIcon.style.display = 'inline';
+  } else {
+    chargingIcon.style.display = 'none';
+  }
+  lastBatteryState = { level, charging };
+}
+
+if (navigator.getBattery) {
+  navigator.getBattery().then(battery => {
+    updateBatteryDisplay(battery.level, battery.charging);
+    battery.addEventListener('levelchange', () => updateBatteryDisplay(battery.level, battery.charging));
+    battery.addEventListener('chargingchange', () => updateBatteryDisplay(battery.level, battery.charging));
+  });
+}
+
+function loadNotes() {
+  try {
+    const raw = localStorage.getItem(NOTES_STORAGE_KEY);
+    if (raw) {
+      notesData = JSON.parse(raw);
+    }
+  } catch {}
+  if (!Array.isArray(notesData)) notesData = [];
+  if (notesData.length === 0) {
+    const id = Date.now().toString();
+    notesData.push({ id, title: 'New Note', content: '', updatedAt: Date.now() });
+  }
+  if (!activeNoteId || !notesData.find(n => n.id === activeNoteId)) {
+    activeNoteId = notesData[0].id;
+  }
+}
+
+function saveNotes() {
+  localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
+}
+
+function renderNotesList(win) {
+  const listEl = win.querySelector('#notes-list');
+  listEl.innerHTML = '';
+  notesData
+    .slice()
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .forEach(note => {
+      const item = document.createElement('div');
+      item.className = 'notes-list-item' + (note.id === activeNoteId ? ' active' : '');
+      item.dataset.id = note.id;
+      const titleDiv = document.createElement('div');
+      titleDiv.className = 'notes-list-item-title';
+      titleDiv.textContent = note.title || 'Untitled';
+      const sub = document.createElement('div');
+      sub.className = 'notes-list-item-sub';
+      const preview = note.content || '';
+      sub.textContent = preview.length > 0 ? preview.slice(0, 32) + (preview.length > 32 ? '…' : '') : 'Empty';
+      item.appendChild(titleDiv);
+      item.appendChild(sub);
+      item.addEventListener('click', () => {
+        activeNoteId = note.id;
+        renderNotesList(win);
+        loadActiveNoteIntoUI(win);
+      });
+      listEl.appendChild(item);
+    });
+}
+
+function loadActiveNoteIntoUI(win) {
+  const note = notesData.find(n => n.id === activeNoteId);
+  if (!note) return;
+  const textarea = win.querySelector('textarea');
+  const titleDisplay = win.querySelector('.note-title-display');
+  const titleInput = win.querySelector('.note-title-input');
+  textarea.value = note.content;
+  titleDisplay.textContent = note.title || 'Untitled';
+  titleInput.value = note.title || '';
+  updateNoteCharCount(win);
+}
+
+function updateNoteCharCount(win) {
+  const textarea = win.querySelector('textarea');
+  const charCountEl = win.querySelector('.char-count');
+  const len = textarea.value.length;
+  charCountEl.textContent = len + ' character' + (len === 1 ? '' : 's');
+}
+
+function createNotesWindow() {
+  if (noteWindow) {
+    bringToFront(noteWindow);
+    noteWindow.classList.add('visible');
+    noteWindow.style.display = 'flex';
+    return;
+  }
+  loadNotes();
+  const win = document.createElement('div');
+  win.className = 'window visible active-window';
+  win.style.left = 'calc(50% - 220px)';
+  win.style.top = 'calc(50% - 170px)';
+  win.innerHTML = `
+    <div class="window-header">
+      <div class="window-title">Notes</div>
+      <div class="window-controls">
+        <button class="minimize-btn" aria-label="Minimize"></button>
+        <button class="fullscreen-btn" aria-label="Fullscreen"></button>
+        <button class="close-btn" aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-content">
+      <div class="notes-layout">
+        <div class="notes-sidebar">
+          <div class="notes-sidebar-header">
+            <span>Notes</span>
+            <button id="add-note-btn">+</button>
+          </div>
+          <div id="notes-list"></div>
+        </div>
+        <div class="notes-main">
+          <div class="note-title-row">
+            <div>
+              <span class="note-title-display">Untitled</span>
+              <input class="note-title-input" maxlength="60" />
+            </div>
+          </div>
+          <textarea spellcheck="true"></textarea>
+          <div class="note-footer">
+            <div class="note-footer-left">
+              <button id="clear-note-btn">Clear</button>
+              <button id="delete-note-btn">Delete</button>
+            </div>
+            <div class="note-footer-right">
+              <span class="save-status">Saved</span>
+              <span class="char-count">0 characters</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="window-resizer"></div>
+  `;
+  document.body.appendChild(win);
+  noteWindow = win;
+  bringToFront(win);
+  const header = win.querySelector('.window-header');
+  const resizer = win.querySelector('.window-resizer');
+  makeDraggable(win, header);
+  makeResizable(win, resizer);
+  win.addEventListener('mousedown', () => bringToFront(win));
+  const closeBtn = win.querySelector('.close-btn');
+  const minimizeBtn = win.querySelector('.minimize-btn');
+  const fullscreenBtn = win.querySelector('.fullscreen-btn');
+  closeBtn.addEventListener('click', () => {
+    win.classList.remove('visible');
+    setTimeout(() => {
+      win.remove();
+      noteWindow = null;
+      document.getElementById('notes-app-btn').setAttribute('aria-pressed', 'false');
+    }, 200);
+  });
+  minimizeBtn.addEventListener('click', () => {
+    win.classList.add('minimizing');
+    setTimeout(() => {
+      win.classList.remove('minimizing');
+      win.style.display = 'none';
+    }, 450);
+  });
+  fullscreenBtn.addEventListener('click', () => {
+    if (!win.classList.contains('fullscreen')) {
+      win.classList.add('fullscreen', 'animate-fullscreen');
+      setTimeout(() => win.classList.remove('animate-fullscreen'), 260);
+    } else {
+      win.classList.remove('fullscreen');
+    }
+  });
+  const addBtn = win.querySelector('#add-note-btn');
+  const clearBtn = win.querySelector('#clear-note-btn');
+  const deleteBtn = win.querySelector('#delete-note-btn');
+  const textarea = win.querySelector('textarea');
+  const saveStatus = win.querySelector('.save-status');
+  const titleDisplay = win.querySelector('.note-title-display');
+  const titleInput = win.querySelector('.note-title-input');
+  addBtn.addEventListener('click', () => {
+    const id = Date.now().toString();
+    const newNote = { id, title: 'New Note', content: '', updatedAt: Date.now() };
+    notesData.push(newNote);
+    activeNoteId = id;
+    saveNotes();
+    renderNotesList(win);
+    loadActiveNoteIntoUI(win);
+  });
+  clearBtn.addEventListener('click', () => {
+    if (!activeNoteId) return;
+    const note = notesData.find(n => n.id === activeNoteId);
+    if (!note) return;
+    note.content = '';
+    note.updatedAt = Date.now();
+    textarea.value = '';
+    saveNotes();
+    renderNotesList(win);
+    updateNoteCharCount(win);
+    saveStatus.textContent = 'Cleared';
+    setTimeout(() => saveStatus.textContent = 'Saved', 600);
+  });
+  deleteBtn.addEventListener('click', () => {
+    if (!activeNoteId) return;
+    if (!confirm('Delete this note?')) return;
+    notesData = notesData.filter(n => n.id !== activeNoteId);
+    if (notesData.length === 0) {
+      const id = Date.now().toString();
+      notesData.push({ id, title: 'New Note', content: '', updatedAt: Date.now() });
+    }
+    activeNoteId = notesData[0].id;
+    saveNotes();
+    renderNotesList(win);
+    loadActiveNoteIntoUI(win);
+  });
+  let saveTimeout = null;
+  textarea.addEventListener('input', () => {
+    updateNoteCharCount(win);
+    saveStatus.textContent = 'Saving...';
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+      const note = notesData.find(n => n.id === activeNoteId);
+      if (!note) return;
+      note.content = textarea.value;
+      note.updatedAt = Date.now();
+      saveNotes();
+      renderNotesList(win);
+      saveStatus.textContent = 'Saved';
+    }, 400);
+  });
+  titleDisplay.addEventListener('dblclick', () => {
+    titleDisplay.style.display = 'none';
+    titleInput.style.display = 'inline-block';
+    titleInput.value = titleDisplay.textContent;
+    titleInput.focus();
+    titleInput.select();
+  });
+  function commitTitle() {
+    const note = notesData.find(n => n.id === activeNoteId);
+    if (!note) return;
+    const val = titleInput.value.trim();
+    note.title = val || 'Untitled';
+    note.updatedAt = Date.now();
+    saveNotes();
+    renderNotesList(win);
+    titleDisplay.textContent = note.title;
+    titleInput.style.display = 'none';
+    titleDisplay.style.display = 'inline';
+  }
+  titleInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitTitle();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      titleInput.style.display = 'none';
+      titleDisplay.style.display = 'inline';
+    }
+  });
+  titleInput.addEventListener('blur', () => {
+    if (titleInput.style.display !== 'none') {
+      commitTitle();
+    }
+  });
+  renderNotesList(win);
+  loadActiveNoteIntoUI(win);
+}
+
+function stopCameraStream() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+  }
+  cameraStream = null;
+}
+
+function createCameraWindow() {
+  if (cameraWindow) {
+    bringToFront(cameraWindow);
+    cameraWindow.classList.add('visible');
+    cameraWindow.style.display = 'flex';
+    return;
+  }
+  const win = document.createElement('div');
+  win.className = 'window visible active-window';
+  win.style.left = 'calc(50% - 230px)';
+  win.style.top = 'calc(50% - 180px)';
+  win.innerHTML = `
+    <div class="window-header">
+      <div class="window-title">Camera</div>
+      <div class="window-controls">
+        <button class="minimize-btn" aria-label="Minimize"></button>
+        <button class="fullscreen-btn" aria-label="Fullscreen"></button>
+        <button class="close-btn" aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-content">
+      <div class="camera-container">
+        <div class="camera-main-row">
+          <div class="camera-preview-main">
+            <video autoplay playsinline></video>
+            <div class="camera-grid"></div>
+          </div>
+          <div class="camera-side-panel">
+            <img class="camera-thumbnail" />
+            <div class="camera-status" id="camera-status"></div>
+          </div>
+        </div>
+        <div class="camera-controls">
+          <button id="camera-photo-btn">Take Photo</button>
+          <button id="camera-record-btn">Start Video</button>
+          <button id="camera-open-gallery-btn">Open Gallery</button>
+          <span class="camera-toggle">
+            <input type="checkbox" id="camera-grid-toggle" />
+            <label for="camera-grid-toggle">Grid</label>
+          </span>
+          <a id="camera-download-link" class="camera-download-link">Download last</a>
+        </div>
+      </div>
+    </div>
+    <div class="window-resizer"></div>
+  `;
+  document.body.appendChild(win);
+  cameraWindow = win;
+  bringToFront(win);
+  const header = win.querySelector('.window-header');
+  const resizer = win.querySelector('.window-resizer');
+  makeDraggable(win, header);
+  makeResizable(win, resizer);
+  win.addEventListener('mousedown', () => bringToFront(win));
+  const closeBtn = win.querySelector('.close-btn');
+  const minimizeBtn = win.querySelector('.minimize-btn');
+  const fullscreenBtn = win.querySelector('.fullscreen-btn');
+  closeBtn.addEventListener('click', () => {
+    win.classList.remove('visible');
+    setTimeout(() => {
+      stopCameraStream();
+      win.remove();
+      cameraWindow = null;
+      document.getElementById('camera-app-btn').setAttribute('aria-pressed', 'false');
+    }, 200);
+  });
+  minimizeBtn.addEventListener('click', () => {
+    win.classList.add('minimizing');
+    setTimeout(() => {
+      win.classList.remove('minimizing');
+      win.style.display = 'none';
+    }, 450);
+  });
+  fullscreenBtn.addEventListener('click', () => {
+    if (!win.classList.contains('fullscreen')) {
+      win.classList.add('fullscreen', 'animate-fullscreen');
+      setTimeout(() => win.classList.remove('animate-fullscreen'), 260);
+    } else {
+      win.classList.remove('fullscreen');
+    }
+  });
+  const video = win.querySelector('video');
+  const grid = win.querySelector('.camera-grid');
+  const photoBtn = win.querySelector('#camera-photo-btn');
+  const recordBtn = win.querySelector('#camera-record-btn');
+  const openGalleryBtn = win.querySelector('#camera-open-gallery-btn');
+  const gridToggle = win.querySelector('#camera-grid-toggle');
+  const thumb = win.querySelector('.camera-thumbnail');
+  const statusEl = win.querySelector('#camera-status');
+  const downloadLink = win.querySelector('#camera-download-link');
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let isRecording = false;
+  gridToggle.checked = settingsData.showGrid;
+  grid.style.display = settingsData.showGrid ? 'block' : 'none';
+  gridToggle.addEventListener('change', () => {
+    settingsData.showGrid = gridToggle.checked;
+    saveSettings();
+    grid.style.display = settingsData.showGrid ? 'block' : 'none';
+  });
+  function startCamera() {
+    if (cameraStream) return;
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+      cameraStream = stream;
+      video.srcObject = stream;
+      statusEl.textContent = 'Camera ready';
+    }).catch(err => {
+      statusEl.textContent = 'Camera error: ' + err.message;
+    });
+  }
+  function capturePhoto() {
+    if (!cameraStream) {
+      statusEl.textContent = 'Camera not ready';
+      return;
+    }
+    const trackSettings = cameraStream.getVideoTracks()[0].getSettings();
+    const w = trackSettings.width || 640;
+    const h = trackSettings.height || 480;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL('image/png');
+    thumb.src = dataUrl;
+    thumb.style.display = 'block';
+    downloadLink.href = dataUrl;
+    downloadLink.download = 'ojjy-photo-' + Date.now() + '.png';
+    downloadLink.style.display = 'inline';
+    statusEl.textContent = 'Photo captured';
+    saveGalleryItem({
+      id: 'p_' + Date.now(),
+      type: 'photo',
+      url: dataUrl,
+      createdAt: Date.now()
+    });
+  }
+  function toggleRecording() {
+    if (!cameraStream) {
+      statusEl.textContent = 'Camera not ready';
+      return;
+    }
+    if (!isRecording) {
+      recordedChunks = [];
+      try {
+        mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/webm;codecs=vp9' });
+      } catch {
+        mediaRecorder = new MediaRecorder(cameraStream);
+      }
+      mediaRecorder.ondataavailable = e => {
+        if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const dataUrl = ev.target.result;
+          thumb.src = '';
+          thumb.style.display = 'none';
+          downloadLink.href = dataUrl;
+          downloadLink.download = 'ojjy-video-' + Date.now() + '.webm';
+          downloadLink.style.display = 'inline';
+          statusEl.textContent = 'Video recorded';
+          saveGalleryItem({
+            id: 'v_' + Date.now(),
+            type: 'video',
+            url: dataUrl,
+            createdAt: Date.now()
+          });
+        };
+        reader.readAsDataURL(blob);
+      };
+      mediaRecorder.start();
+      isRecording = true;
+      recordBtn.textContent = 'Stop Video';
+      statusEl.textContent = 'Recording...';
+    } else {
+      mediaRecorder.stop();
+      isRecording = false;
+      recordBtn.textContent = 'Start Video';
+    }
+  }
+  photoBtn.addEventListener('click', capturePhoto);
+  recordBtn.addEventListener('click', toggleRecording);
+  openGalleryBtn.addEventListener('click', () => {
+    createGalleryWindow();
+  });
+  startCamera();
+}
+
+function loadGalleryItems() {
+  try {
+    const raw = localStorage.getItem(GALLERY_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr;
+    }
+  } catch {}
+  return [];
+}
+
+function saveGalleryItems(items) {
+  localStorage.setItem(GALLERY_STORAGE_KEY, JSON.stringify(items));
+}
+
+function saveGalleryItem(item) {
+  const items = loadGalleryItems();
+  items.push(item);
+  saveGalleryItems(items);
+}
+
+function createGalleryWindow() {
+  if (galleryWindow) {
+    bringToFront(galleryWindow);
+    galleryWindow.classList.add('visible');
+    galleryWindow.style.display = 'flex';
+    return;
+  }
+  const win = document.createElement('div');
+  win.className = 'window visible active-window';
+  win.style.left = 'calc(50% - 240px)';
+  win.style.top = 'calc(50% - 190px)';
+  win.innerHTML = `
+    <div class="window-header">
+      <div class="window-title">Gallery</div>
+      <div class="window-controls">
+        <button class="minimize-btn" aria-label="Minimize"></button>
+        <button class="fullscreen-btn" aria-label="Fullscreen"></button>
+        <button class="close-btn" aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-content">
+      <div class="gallery-container">
+        <div class="gallery-list" id="gallery-list"></div>
+        <div class="gallery-viewer" id="gallery-viewer">
+          <div class="gallery-placeholder">No media selected</div>
+        </div>
+      </div>
+    </div>
+    <div class="window-resizer"></div>
+  `;
+  document.body.appendChild(win);
+  galleryWindow = win;
+  bringToFront(win);
+  const header = win.querySelector('.window-header');
+  const resizer = win.querySelector('.window-resizer');
+  makeDraggable(win, header);
+  makeResizable(win, resizer);
+  win.addEventListener('mousedown', () => bringToFront(win));
+  const closeBtn = win.querySelector('.close-btn');
+  const minimizeBtn = win.querySelector('.minimize-btn');
+  const fullscreenBtn = win.querySelector('.fullscreen-btn');
+  closeBtn.addEventListener('click', () => {
+    win.classList.remove('visible');
+    setTimeout(() => {
+      win.remove();
+      galleryWindow = null;
+      document.getElementById('gallery-app-btn').setAttribute('aria-pressed', 'false');
+    }, 200);
+  });
+  minimizeBtn.addEventListener('click', () => {
+    win.classList.add('minimizing');
+    setTimeout(() => {
+      win.classList.remove('minimizing');
+      win.style.display = 'none';
+    }, 450);
+  });
+  fullscreenBtn.addEventListener('click', () => {
+    if (!win.classList.contains('fullscreen')) {
+      win.classList.add('fullscreen', 'animate-fullscreen');
+      setTimeout(() => win.classList.remove('animate-fullscreen'), 260);
+    } else {
+      win.classList.remove('fullscreen');
+    }
+  });
+  renderGalleryList(win);
+}
+
+function renderGalleryList(win) {
+  const listEl = win.querySelector('#gallery-list');
+  const viewer = win.querySelector('#gallery-viewer');
+  listEl.innerHTML = '';
+  viewer.innerHTML = '<div class="gallery-placeholder">No media selected</div>';
+  const items = loadGalleryItems().slice().sort((a, b) => b.createdAt - a.createdAt);
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="gallery-item">No media yet</div>';
+    return;
+  }
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'gallery-item';
+    div.dataset.id = item.id;
+    const typeEl = document.createElement('div');
+    typeEl.className = 'gallery-item-type';
+    typeEl.textContent = item.type === 'photo' ? 'Photo' : 'Video';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'gallery-item-name';
+    nameEl.textContent = item.id;
+    const timeEl = document.createElement('div');
+    timeEl.className = 'gallery-item-time';
+    timeEl.textContent = new Date(item.createdAt).toLocaleString();
+    div.appendChild(typeEl);
+    div.appendChild(nameEl);
+    div.appendChild(timeEl);
+    div.addEventListener('click', () => {
+      viewer.innerHTML = '';
+      if (item.type === 'photo') {
+        const img = document.createElement('img');
+        img.src = item.url;
+        viewer.appendChild(img);
+      } else if (item.type === 'video') {
+        const vid = document.createElement('video');
+        vid.src = item.url;
+        vid.controls = true;
+        viewer.appendChild(vid);
+      }
+    });
+    listEl.appendChild(div);
+  });
+}
+
+function createSettingsWindow() {
+  if (settingsWindow) {
+    bringToFront(settingsWindow);
+    settingsWindow.classList.add('visible');
+    settingsWindow.style.display = 'flex';
+    return;
+  }
+  const win = document.createElement('div');
+  win.className = 'window visible active-window';
+  win.style.left = 'calc(50% - 260px)';
+  win.style.top = 'calc(50% - 190px)';
+  win.innerHTML = `
+    <div class="window-header">
+      <div class="window-title">Settings</div>
+      <div class="window-controls">
+        <button class="minimize-btn" aria-label="Minimize"></button>
+        <button class="fullscreen-btn" aria-label="Fullscreen"></button>
+        <button class="close-btn" aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-content settings-content">
+      <div class="settings-container">
+        <div class="settings-section">
+          <h3>Wallpaper</h3>
+          <div class="wallpaper-options">
+            <div class="wallpaper-thumb" data-wallpaper="preset1" style="background-image:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&q=80')">
+              <span>Default</span>
+            </div>
+            <div class="wallpaper-thumb" data-wallpaper="preset2" style="background-image:linear-gradient(135deg, #00d2ff, #3a7bd5)">
+              <span>Aqua</span>
+            </div>
+            <div class="wallpaper-thumb" data-wallpaper="preset3" style="background-image:url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=300&q=80')">
+              <span>Desert</span>
+            </div>
+            <div class="wallpaper-thumb" data-wallpaper="custom">
+              <span>Custom</span>
+            </div>
+          </div>
+          <div class="settings-upload">
+            <label>Upload custom wallpaper:
+              <input type="file" id="wallpaper-upload" accept="image/*" />
+            </label>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Time</h3>
+          <div class="settings-timeformat">
+            <label><input type="radio" name="timeformat" value="12h"> 12-hour (AM/PM)</label>
+            <label><input type="radio" name="timeformat" value="24h"> 24-hour</label>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Camera</h3>
+          <div class="settings-toggle">
+            <input type="checkbox" id="settings-grid-toggle" />
+            <label for="settings-grid-toggle">Show grid overlay in Camera</label>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>User</h3>
+          <div class="settings-toggle">
+            <button id="settings-change-name-btn">Change name</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-footer">Made with ❤️ by Jonas</div>
+        </div>
+      </div>
+    </div>
+    <div class="window-resizer"></div>
+  `;
+  document.body.appendChild(win);
+  settingsWindow = win;
+  bringToFront(win);
+  const header = win.querySelector('.window-header');
+  const resizer = win.querySelector('.window-resizer');
+  makeDraggable(win, header);
+  makeResizable(win, resizer);
+  win.addEventListener('mousedown', () => bringToFront(win));
+  const closeBtn = win.querySelector('.close-btn');
+  const minimizeBtn = win.querySelector('.minimize-btn');
+  const fullscreenBtn = win.querySelector('.fullscreen-btn');
+  closeBtn.addEventListener('click', () => {
+    win.classList.remove('visible');
+    setTimeout(() => {
+      win.remove();
+      settingsWindow = null;
+      document.getElementById('settings-app-btn').setAttribute('aria-pressed', 'false');
+    }, 200);
+  });
+  minimizeBtn.addEventListener('click', () => {
+    win.classList.add('minimizing');
+    setTimeout(() => {
+      win.classList.remove('minimizing');
+      win.style.display = 'none';
+    }, 450);
+  });
+  fullscreenBtn.addEventListener('click', () => {
+    if (!win.classList.contains('fullscreen')) {
+      win.classList.add('fullscreen', 'animate-fullscreen');
+      setTimeout(() => win.classList.remove('animate-fullscreen'), 260);
+    } else {
+      win.classList.remove('fullscreen');
+    }
+  });
+  const wallpaperThumbs = win.querySelectorAll('.wallpaper-thumb');
+  function updateWallpaperThumbs() {
+    wallpaperThumbs.forEach(t => {
+      t.classList.toggle('active', t.dataset.wallpaper === settingsData.wallpaper);
+    });
+  }
+  wallpaperThumbs.forEach(t => {
+    t.addEventListener('click', () => {
+      const val = t.dataset.wallpaper;
+      if (val === 'custom') {
+        settingsData.wallpaper = 'custom';
+        saveSettings();
+        updateWallpaperThumbs();
+        const uploadInput = win.querySelector('#wallpaper-upload');
+        uploadInput.click();
+      } else {
+        settingsData.wallpaper = val;
+        saveSettings();
+        updateWallpaperThumbs();
+        applyWallpaper();
+      }
+    });
+  });
+  const uploadInput = win.querySelector('#wallpaper-upload');
+  uploadInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      settingsData.wallpaper = 'custom';
+      settingsData.customWallpaper = ev.target.result;
+      saveSettings();
+      updateWallpaperThumbs();
+      applyWallpaper();
+    };
+    reader.readAsDataURL(file);
+  });
+  updateWallpaperThumbs();
+  const timeRadios = win.querySelectorAll('input[name="timeformat"]');
+  timeRadios.forEach(r => {
+    if (r.value === settingsData.timeFormat) {
+      r.checked = true;
+    }
+    r.addEventListener('change', () => {
+      settingsData.timeFormat = r.value;
+      saveSettings();
+      updateTime();
+    });
+  });
+  const camGridToggle = win.querySelector('#settings-grid-toggle');
+  camGridToggle.checked = settingsData.showGrid;
+  camGridToggle.addEventListener('change', () => {
+    settingsData.showGrid = camGridToggle.checked;
+    saveSettings();
+  });
+  const changeNameBtn = win.querySelector('#settings-change-name-btn');
+  changeNameBtn.addEventListener('click', () => {
+    showNameModal();
+  });
+}
+
+function createTerminalWindow() {
+  if (terminalWindow) {
+    bringToFront(terminalWindow);
+    terminalWindow.classList.add('visible');
+    terminalWindow.style.display = 'flex';
+    return;
+  }
+  const win = document.createElement('div');
+  win.className = 'window visible active-window';
+  win.style.left = 'calc(50% - 260px)';
+  win.style.top = 'calc(50% - 190px)';
+  win.innerHTML = `
+    <div class="window-header">
+      <div class="window-title">Terminal</div>
+      <div class="window-controls">
+        <button class="minimize-btn" aria-label="Minimize"></button>
+        <button class="fullscreen-btn" aria-label="Fullscreen"></button>
+        <button class="close-btn" aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-content">
+      <div class="terminal-container">
+        <div class="terminal-top-bar">
+          <button class="terminal-mode-btn" data-mode="shell">Shell</button>
+          <button class="terminal-mode-btn" data-mode="js">JS Console</button>
+          <div class="terminal-mode-label" id="terminal-mode-label"></div>
+        </div>
+        <div class="terminal-output" id="terminal-output"></div>
+        <div class="terminal-input-row">
+          <span id="terminal-prompt"></span>
+          <input id="terminal-input" autocomplete="off" />
+        </div>
+      </div>
+    </div>
+    <div class="window-resizer"></div>
+  `;
+  document.body.appendChild(win);
+  terminalWindow = win;
+  bringToFront(win);
+  const header = win.querySelector('.window-header');
+  const resizer = win.querySelector('.window-resizer');
+  makeDraggable(win, header);
+  makeResizable(win, resizer);
+  win.addEventListener('mousedown', () => bringToFront(win));
+  const closeBtn = win.querySelector('.close-btn');
+  const minimizeBtn = win.querySelector('.minimize-btn');
+  const fullscreenBtn = win.querySelector('.fullscreen-btn');
+  closeBtn.addEventListener('click', () => {
+    win.classList.remove('visible');
+    setTimeout(() => {
+      win.remove();
+      terminalWindow = null;
+      document.getElementById('terminal-app-btn').setAttribute('aria-pressed', 'false');
+    }, 200);
+  });
+  minimizeBtn.addEventListener('click', () => {
+    win.classList.add('minimizing');
+    setTimeout(() => {
+      win.classList.remove('minimizing');
+      win.style.display = 'none';
+    }, 450);
+  });
+  fullscreenBtn.addEventListener('click', () => {
+    if (!win.classList.contains('fullscreen')) {
+      win.classList.add('fullscreen', 'animate-fullscreen');
+      setTimeout(() => win.classList.remove('animate-fullscreen'), 260);
+    } else {
+      win.classList.remove('fullscreen');
+    }
+  });
+  const modeButtons = win.querySelectorAll('.terminal-mode-btn');
+  const modeLabel = win.querySelector('#terminal-mode-label');
+  const outputEl = win.querySelector('#terminal-output');
+  const inputEl = win.querySelector('#terminal-input');
+  const promptEl = win.querySelector('#terminal-prompt');
+  let mode = 'shell';
+  let history = [];
+  let historyIndex = -1;
+  function setMode(newMode) {
+    mode = newMode;
+    modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    if (mode === 'shell') {
+      modeLabel.textContent = 'Fake shell: type "help"';
+      const name = localStorage.getItem(USER_NAME_KEY) || 'guest';
+      promptEl.textContent = name + '@ojjyOS:~$';
+    } else {
+      modeLabel.textContent = 'JS console: run JavaScript';
+      promptEl.textContent = 'js>';
+    }
+    inputEl.value = '';
+  }
+  function appendLine(type, text) {
+    const line = document.createElement('div');
+    line.className = 'terminal-line ' + (type === 'cmd' ? 'terminal-line-cmd' : type === 'error' ? 'terminal-line-error' : 'terminal-line-output');
+    line.textContent = text;
+    outputEl.appendChild(line);
+    outputEl.scrollTop = outputEl.scrollHeight;
+  }
+  function runShellCommand(cmd) {
+    const parts = cmd.trim().split(/\s+/);
+    const base = parts[0] || '';
+    const args = parts.slice(1);
+    if (!base) return;
+    if (base === 'help') {
+      appendLine('out', 'Commands: help, clear, cls, echo, date, time, battery, whoami, osinfo');
+    } else if (base === 'clear' || base === 'cls') {
+      outputEl.innerHTML = '';
+    } else if (base === 'echo') {
+      appendLine('out', args.join(' '));
+    } else if (base === 'date') {
+      appendLine('out', new Date().toString());
+    } else if (base === 'time') {
+      appendLine('out', new Date().toLocaleTimeString());
+    } else if (base === 'battery') {
+      appendLine('out', 'Battery: ' + Math.round(lastBatteryState.level * 100) + '% ' + (lastBatteryState.charging ? '(charging)' : ''));
+    } else if (base === 'whoami') {
+      const name = localStorage.getItem(USER_NAME_KEY) || 'guest';
+      appendLine('out', name);
+    } else if (base === 'osinfo') {
+      appendLine('out', 'ojjyOS web shell');
+    } else {
+      appendLine('error', 'Unknown command: ' + base);
+    }
+  }
+  function runJsCommand(cmd) {
+    if (!cmd.trim()) return;
+    try {
+      const result = eval(cmd);
+      appendLine('out', String(result));
+    } catch (e) {
+      appendLine('error', String(e));
+    }
+  }
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const cmd = inputEl.value;
+      if (!cmd.trim()) return;
+      appendLine('cmd', promptEl.textContent + ' ' + cmd);
+      history.push(cmd);
+      historyIndex = history.length;
+      inputEl.value = '';
+      if (mode === 'shell') {
+        runShellCommand(cmd);
+      } else {
+        runJsCommand(cmd);
+      }
+    } else if (e.key === 'ArrowUp') {
+      if (history.length === 0) return;
+      if (historyIndex > 0) historyIndex -= 1;
+      inputEl.value = history[historyIndex] || '';
+      setTimeout(() => inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length), 0);
+      e.preventDefault();
+    } else if (e.key === 'ArrowDown') {
+      if (history.length === 0) return;
+      if (historyIndex < history.length - 1) {
+        historyIndex += 1;
+        inputEl.value = history[historyIndex] || '';
+      } else {
+        historyIndex = history.length;
+        inputEl.value = '';
+      }
+      e.preventDefault();
+    }
+  });
+  modeButtons.forEach(b => {
+    b.addEventListener('click', () => {
+      setMode(b.dataset.mode);
+      inputEl.focus();
+    });
+  });
+  setMode('shell');
+  inputEl.focus();
+}
+
+function loadFiles() {
+  try {
+    const raw = localStorage.getItem(FILES_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr;
+    }
+  } catch {}
+  return [];
+}
+
+function saveFiles(items) {
+  localStorage.setItem(FILES_STORAGE_KEY, JSON.stringify(items));
+}
+
+function createFileManagerWindow() {
+  if (fileManagerWindow) {
+    bringToFront(fileManagerWindow);
+    fileManagerWindow.classList.add('visible');
+    fileManagerWindow.style.display = 'flex';
+    return;
+  }
+  const win = document.createElement('div');
+  win.className = 'window visible active-window';
+  win.style.left = 'calc(50% - 260px)';
+  win.style.top = 'calc(50% - 190px)';
+  win.innerHTML = `
+    <div class="window-header">
+      <div class="window-title">File Manager</div>
+      <div class="window-controls">
+        <button class="minimize-btn" aria-label="Minimize"></button>
+        <button class="fullscreen-btn" aria-label="Fullscreen"></button>
+        <button class="close-btn" aria-label="Close"></button>
+      </div>
+    </div>
+    <div class="window-content">
+      <div class="filemanager-container">
+        <div class="filemanager-toolbar">
+          <label class="filemanager-upload-label">
+            Upload
+            <input type="file" id="filemanager-upload" multiple />
+          </label>
+        </div>
+        <div class="filemanager-body">
+          <div class="filemanager-list" id="filemanager-list"></div>
+          <div class="filemanager-details" id="filemanager-details">
+            <div class="filemanager-placeholder">Select a file to see details</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="window-resizer"></div>
+  `;
+  document.body.appendChild(win);
+  fileManagerWindow = win;
+  bringToFront(win);
+  const header = win.querySelector('.window-header');
+  const resizer = win.querySelector('.window-resizer');
+  makeDraggable(win, header);
+  makeResizable(win, resizer);
+  win.addEventListener('mousedown', () => bringToFront(win));
+  const closeBtn = win.querySelector('.close-btn');
+  const minimizeBtn = win.querySelector('.minimize-btn');
+  const fullscreenBtn = win.querySelector('.fullscreen-btn');
+  closeBtn.addEventListener('click', () => {
+    win.classList.remove('visible');
+    setTimeout(() => {
+      win.remove();
+      fileManagerWindow = null;
+      document.getElementById('filemanager-app-btn').setAttribute('aria-pressed', 'false');
+    }, 200);
+  });
+  minimizeBtn.addEventListener('click', () => {
+    win.classList.add('minimizing');
+    setTimeout(() => {
+      win.classList.remove('minimizing');
+      win.style.display = 'none';
+    }, 450);
+  });
+  fullscreenBtn.addEventListener('click', () => {
+    if (!win.classList.contains('fullscreen')) {
+      win.classList.add('fullscreen', 'animate-fullscreen');
+      setTimeout(() => win.classList.remove('animate-fullscreen'), 260);
+    } else {
+      win.classList.remove('fullscreen');
+    }
+  });
+  const uploadInput = win.querySelector('#filemanager-upload');
+  const listEl = win.querySelector('#filemanager-list');
+  const detailsEl = win.querySelector('#filemanager-details');
+  function renderList() {
+    const files = loadFiles().slice().sort((a, b) => b.createdAt - a.createdAt);
+    listEl.innerHTML = '';
+    if (files.length === 0) {
+      listEl.innerHTML = '<div class="filemanager-item">No files yet</div>';
+      return;
+    }
+    files.forEach(file => {
+      const div = document.createElement('div');
+      div.className = 'filemanager-item';
+      div.dataset.id = file.id;
+      const nameEl = document.createElement('div');
+      nameEl.className = 'filemanager-item-name';
+      nameEl.textContent = file.name;
+      const meta = document.createElement('div');
+      meta.className = 'filemanager-item-meta';
+      meta.textContent = Math.round(file.size / 1024) + ' KB';
+      div.appendChild(nameEl);
+      div.appendChild(meta);
+      div.addEventListener('click', () => {
+        renderDetails(file);
+      });
+      listEl.appendChild(div);
+    });
+  }
+  function renderDetails(file) {
+    detailsEl.innerHTML = '';
+    const title = document.createElement('h4');
+    title.textContent = file.name;
+    const row1 = document.createElement('div');
+    row1.className = 'filemanager-details-row';
+    row1.textContent = 'Size: ' + file.size + ' bytes';
+    const row2 = document.createElement('div');
+    row2.className = 'filemanager-details-row';
+    row2.textContent = 'Type: ' + (file.type || 'unknown');
+    const row3 = document.createElement('div');
+    row3.className = 'filemanager-details-row';
+    row3.textContent = 'Added: ' + new Date(file.createdAt).toLocaleString();
+    const actions = document.createElement('div');
+    actions.className = 'filemanager-details-actions';
+    const downloadLink = document.createElement('a');
+    downloadLink.href = file.dataUrl;
+    downloadLink.download = file.name;
+    downloadLink.textContent = 'Download';
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.addEventListener('click', () => {
+      const files = loadFiles().filter(f => f.id !== file.id);
+      saveFiles(files);
+      renderList();
+      detailsEl.innerHTML = '<div class="filemanager-placeholder">Select a file to see details</div>';
+    });
+    actions.appendChild(downloadLink);
+    actions.appendChild(deleteBtn);
+    detailsEl.appendChild(title);
+    detailsEl.appendChild(row1);
+    detailsEl.appendChild(row2);
+    detailsEl.appendChild(row3);
+    detailsEl.appendChild(actions);
+  }
+  uploadInput.addEventListener('change', e => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const existing = loadFiles();
+    let remaining = files.length;
+    files.forEach(f => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        existing.push({
+          id: 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          dataUrl: ev.target.result,
+          createdAt: Date.now()
+        });
+        remaining -= 1;
+        if (remaining === 0) {
+          saveFiles(existing);
+          renderList();
+          uploadInput.value = '';
+        }
+      };
+      reader.readAsDataURL(f);
+    });
+  });
+  renderList();
+}
+
+function wireAppButtons() {
+  const notesBtn = document.getElementById('notes-app-btn');
+  const cameraBtn = document.getElementById('camera-app-btn');
+  const galleryBtn = document.getElementById('gallery-app-btn');
+  const fileBtn = document.getElementById('filemanager-app-btn');
+  const settingsBtn = document.getElementById('settings-app-btn');
+  const terminalBtn = document.getElementById('terminal-app-btn');
+  function toggleWindow(winRefGetter, createFn, btnEl) {
+    const winRef = winRefGetter();
+    if (!winRef) {
+      createFn();
+      btnEl.setAttribute('aria-pressed', 'true');
+    } else {
+      if (winRef.style.display === 'none') {
+        winRef.style.display = 'flex';
+        setTimeout(() => winRef.classList.add('visible'), 10);
+        bringToFront(winRef);
+        btnEl.setAttribute('aria-pressed', 'true');
+      } else {
+        winRef.classList.add('minimizing');
+        setTimeout(() => {
+          winRef.classList.remove('minimizing');
+          winRef.style.display = 'none';
+          btnEl.setAttribute('aria-pressed', 'false');
+        }, 450);
+      }
+    }
+  }
+  notesBtn.addEventListener('click', () => toggleWindow(() => noteWindow, createNotesWindow, notesBtn));
+  cameraBtn.addEventListener('click', () => toggleWindow(() => cameraWindow, createCameraWindow, cameraBtn));
+  galleryBtn.addEventListener('click', () => toggleWindow(() => galleryWindow, createGalleryWindow, galleryBtn));
+  fileBtn.addEventListener('click', () => toggleWindow(() => fileManagerWindow, createFileManagerWindow, fileBtn));
+  settingsBtn.addEventListener('click', () => toggleWindow(() => settingsWindow, createSettingsWindow, settingsBtn));
+  terminalBtn.addEventListener('click', () => toggleWindow(() => terminalWindow, createTerminalWindow, terminalBtn));
+  [notesBtn, cameraBtn, galleryBtn, fileBtn, settingsBtn, terminalBtn].forEach(btn => {
+    btn.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        btn.click();
+      }
+    });
+  });
+}
+
+function openAppFromLauncher(name) {
+  const map = {
+    notes: 'notes-app-btn',
+    camera: 'camera-app-btn',
+    gallery: 'gallery-app-btn',
+    files: 'filemanager-app-btn',
+    settings: 'settings-app-btn',
+    terminal: 'terminal-app-btn'
+  };
+  const id = map[name];
+  if (!id) return;
+  const btn = document.getElementById(id);
+  if (btn) btn.click();
+}
+
+function initAppLauncher() {
+  const launcher = document.getElementById('app-launcher');
+  const inner = document.getElementById('app-launcher-inner');
+  const startBtn = document.getElementById('start-button');
+  const searchInput = document.getElementById('app-search');
+  const list = document.getElementById('app-list');
+  function toggleLauncher() {
+    if (launcher.classList.contains('hidden')) {
+      launcher.classList.remove('hidden');
+      searchInput.value = '';
+      list.querySelectorAll('.app-launcher-item').forEach(it => {
+        it.style.display = 'block';
+      });
+      setTimeout(() => searchInput.focus(), 20);
+    } else {
+      launcher.classList.add('hidden');
+    }
+  }
+  startBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    toggleLauncher();
+  });
+  document.addEventListener('click', e => {
+    if (launcher.classList.contains('hidden')) return;
+    if (!launcher.contains(e.target) && e.target !== startBtn) {
+      launcher.classList.add('hidden');
+    }
+  });
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase();
+    list.querySelectorAll('.app-launcher-item').forEach(it => {
+      const name = it.textContent.toLowerCase();
+      it.style.display = name.includes(q) ? 'block' : 'none';
+    });
+  });
+  list.addEventListener('click', e => {
+    const btn = e.target.closest('.app-launcher-item');
+    if (!btn) return;
+    const app = btn.dataset.app;
+    openAppFromLauncher(app);
+    launcher.classList.add('hidden');
+  });
+}
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 't') {
+    e.preventDefault();
+    const btn = document.getElementById('terminal-app-btn');
+    btn.click();
+  }
+});
+
+loadSettings();
+applyWallpaper();
+updateTime();
+wireAppButtons();
+initAppLauncher();
+wireLockScreen();
+</script>
+</body>
+</html>
